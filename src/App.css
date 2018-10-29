@@ -8,6 +8,7 @@
 }
 
 .App-header {
+  background-image: url("./looper.svg");
   background-color: #282c34;
   min-height: 100vh;
   display: flex;
