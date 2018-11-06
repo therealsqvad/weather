@@ -28,6 +28,7 @@
     "eslint-plugin-import": "^2.14.0",
     "eslint-plugin-jsx-a11y": "^6.1.2",
     "eslint-plugin-react": "^7.11.1",
+    "require": "^2.4.20",
     "yandex-map-react": "^1.1.1"
   }
 }
