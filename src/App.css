@@ -24,3 +24,16 @@
   color: #61dafb;
 }
 
+#cityOutput {
+  text-decoration: none; /* Убираем подчеркивание */
+  border-bottom: 2px dashed rgb(173, 173, 173); /* Добавляем свою линию */ 
+}
+
+#cityOutput:hover {
+  color: rgb(173, 173, 173);
+}
+
+#cityOutput:visited {
+  color: #fff;
+}
+

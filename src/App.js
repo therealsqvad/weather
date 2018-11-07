@@ -1,3 +1,9 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+/* eslint-disable jsx-a11y/label-has-for */
+/* eslint-disable jsx-a11y/label-has-associated-control */
+/* eslint-disable react/button-has-type */
+/* eslint-disable jsx-a11y/no-static-element-interactions */
+/* eslint-disable jsx-a11y/click-events-have-key-events */
 import React, { Component } from 'react';
 import { Map, Marker, MarkerLayout } from 'yandex-map-react';
 import logo from './TCSlogo.svg';
@@ -5,7 +11,50 @@ import './App.css';
 
 
 class App extends Component {
-state = { latitude: 0, longitude: 0, temperature: null };
+    state = {
+      latitude: 0,
+      longitude: 0,
+      city: 'Выбор города',
+      temperature: null,
+      inputcity: false,
+      isGeoposition: true
+    };
+
+
+checkgeo = () => {
+  this.setState({ isGeoposition: true });
+}
+
+checkCity = () => {
+  this.setState({ isGeoposition: false });
+}
+
+changeCity = () => {
+  this.setState({ inputcity: true });
+}
+
+inputchange = e => {
+  this.setState({
+    inputed: e.target.value
+  });
+}
+
+setCity = e => {
+  e.preventDefault();
+  const { inputed } = this.state;
+
+  this.setState({
+    city: inputed, inputcity: false
+  });
+}
+
+inputBlur = e => {
+  if (e.target.value === '') {
+    this.setState({
+      city: 'Выбор города', isGeoposition: true, inputcity: false, inputed: ''
+    });
+  }
+}
 
 render() {
   function getXmlHttp() {
@@ -19,6 +68,12 @@ render() {
   req.onreadystatechange = () => {
     if (req.readyState === 4) {
       if (req.status === 200) {
+        const { city, isGeoposition } = this.state;
+
+        if (!city || isGeoposition) {
+          this.setState({ city: 'Выбор города' });
+        }
+        // console.log(req.responseText);
         const weatherIconMap = [
           'storm', 'storm', 'storm', 'lightning', 'lightning', 'snow', 'hail', 'hail',
           'drizzle', 'drizzle', 'rain', 'rain', 'rain', 'snow', 'snow', 'snow', 'snow',
@@ -34,10 +89,10 @@ render() {
 
         this.setState({ weatherIcon: `/icons/${weatherIconMap[item.code]}.png` });
 
-        console.log(forecast);
+        // console.log(forecast);
         // const tmp = forecast.list['1'].main.temp;
 
-        this.setState({ temperature: item.temp });
+        this.setState({ temperature: `${item.temp}°` });
         // const city = forecast.list['1'].name;
 
         document.getElementById('city').textContent = forecast.query.results.channel.location.city;
@@ -49,9 +104,21 @@ render() {
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
 
+    // console.log('lat', lat, 'lon', lon);
+    // const yanKey = '45a0bdda-2e24-4138-95db-b4738ddcc752';
+
     this.setState({ latitude: lat, longitude: lon });
     const DEG = 'c';
-    const wsql = `select * from weather.forecast where woeid in (select woeid from geo.places(1) where text="(${lat},${lon})") and u="${DEG}"`;
+    let searchCity;
+    const { isGeoposition, city } = this.state;
+
+    if (isGeoposition) {
+      searchCity = `(${lat},${lon})`;
+    } else {
+      searchCity = city;
+    }
+    const wsql = `select * from weather.forecast where woeid in (select woeid from geo.places(1) where text="${searchCity}") and u="${DEG}"`;
+    // const wsql = `select * from weather.forecast where woeid in (select woeid from geo.places(1) where text="(${lat},${lon})") and u="${DEG}"`;
     const weatherYQL = `https://query.yahooapis.com/v1/public/yql?q=${encodeURIComponent(wsql)}&format=json&ttl=90`;
     // req.open('GET', `http://api.openweathermap.org/data/2.5/find?lat=${lat}&lon=${lon}&type=like&APPID=cda95ddeb17adb2fc338e7fe7c132ab2`, true);
 
@@ -64,22 +131,53 @@ render() {
     controls: ['default']
   };
 
-  const { latitude } = this.state;
-  const { longitude } = this.state;
+  const { latitude, longitude, city } = this.state;
   const { temperature } = this.state;
   const { weatherIcon } = this.state;
+  const {
+    inputed, inputcity, isGeoposition
+  } = this.state;
 
   return (
     <div className="App">
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
+        <div id="filters">
+          <label onClick={this.checkgeo}>
+            <input name="dzen" type="radio" value="geo" checked={isGeoposition} />
+
+          Геопозиция&nbsp;&nbsp;
+          </label>
+          <label onClick={this.checkCity}>
+            <input name="dzen" type="radio" value="gorod" checked={!isGeoposition} />
+            <a href="#" hidden={inputcity} id="cityOutput" onClick={this.changeCity}>{city}</a>
+            <form
+              onSubmit={this.setCity}
+              hidden={!inputcity}
+              style={{
+                float: 'right'
+              }}
+            >
+              <input
+                type="text"
+                id="inputtext"
+                maxLength="60"
+                style={{ 'font-size': 'calc(10px + 2vmin);' }}
+                value={inputed}
+                onChange={this.inputchange}
+                onBlur={this.inputBlur}
+              />
+              <button id="add">✔</button>
+            </form>
+
+          </label>
+        </div>
         <div id="gradus">
           {temperature}
-            °
         </div>
         <div id="city" />
         <div id="lati" />
-        <Map className="map" width="300px" height="300px" state={mapState} center={[latitude, longitude]} zoom={10}>
+        <Map className="map" width="300px" height="300px" state={mapState} center={[latitude, longitude]} zoom={10} lang="en_US">
           <Marker lat={latitude} lon={longitude}>
             <MarkerLayout>
               <div style={{
@@ -93,7 +191,6 @@ render() {
                 <span className="temperatura">
                   <b>
                     {temperature}
-                    °
                   </b>
                 </span>
               </div>
