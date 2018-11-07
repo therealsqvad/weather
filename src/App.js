@@ -17,7 +17,8 @@ class App extends Component {
       city: 'Выбор города',
       temperature: null,
       inputcity: false,
-      isGeoposition: true
+      isGeoposition: true,
+      TTL: 60000
     };
 
 
@@ -64,6 +65,7 @@ render() {
   }
 
   const req = getXmlHttp();
+  const getGeo = getXmlHttp();
 
   req.onreadystatechange = () => {
     if (req.readyState === 4) {
@@ -100,6 +102,8 @@ render() {
     }
   };
 
+  // const { TTL } = this.state;
+
   navigator.geolocation.getCurrentPosition(position => {
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
@@ -122,9 +126,10 @@ render() {
     const weatherYQL = `https://query.yahooapis.com/v1/public/yql?q=${encodeURIComponent(wsql)}&format=json&ttl=90`;
     // req.open('GET', `http://api.openweathermap.org/data/2.5/find?lat=${lat}&lon=${lon}&type=like&APPID=cda95ddeb17adb2fc338e7fe7c132ab2`, true);
 
-    req.open('GET', weatherYQL);
+    req.open('GET', weatherYQL, true);
     req.send();
   });
+
   // req.open('GET', 'https://query.yahooapis.com/v1/public/yql?q=select+*+from+weather.forecast+where+woeid+in+(select+woeid+from+geo.places(1)+where+text%3D%27Novosibirsk+Russia%27)+AND+u%3D%27c%27&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&format=json', true);
 
   const mapState = {
@@ -137,6 +142,30 @@ render() {
   const {
     inputed, inputcity, isGeoposition
   } = this.state;
+
+
+  if (city && city !== 'Выбор города' && !isGeoposition) {
+    getGeo.open('GET', `https://geocode-maps.yandex.ru/1.x/?apikey=45a0bdda-2e24-4138-95db-b4738ddcc752&geocode=${city}&format=json`, true);
+    getGeo.send();
+  }
+
+  getGeo.onreadystatechange = () => {
+    if (getGeo.readyState === 4) {
+      if (getGeo.status === 200) {
+        const JSONstr = getGeo.responseText;
+        const forecast = JSON.parse(JSONstr);
+
+
+        const coords = (forecast.response.GeoObjectCollection.featureMember['0'].GeoObject.Point.pos).split(' ');
+
+        this.setState({
+          latitude: coords[1],
+          longitude: coords[0]
+        });
+        // this.setState({ weatherIcon: `/icons/${weatherIconMap[item.code]}.png` });
+      }
+    }
+  };
 
   return (
     <div className="App">
@@ -162,7 +191,6 @@ render() {
                 type="text"
                 id="inputtext"
                 maxLength="60"
-                style={{ 'font-size': 'calc(10px + 2vmin);' }}
                 value={inputed}
                 onChange={this.inputchange}
                 onBlur={this.inputBlur}
